@@ -6,11 +6,11 @@ Uses httpx + FastAPI TestClient — no real server needed, no LLM calls.
 
 from __future__ import annotations
 
+import api
 import pytest
+from api import app
 from fastapi.testclient import TestClient
 
-from api import app
-import api
 from deed_validator.pipeline import DeedValidationPipeline
 
 client = TestClient(app)
@@ -22,6 +22,7 @@ def _warm_pipeline() -> None:
     api._pipeline = DeedValidationPipeline()
     yield  # type: ignore[misc]
     api._pipeline = None
+
 
 # ─── Sample OCR text (same as main.py) ──────────────────────────────
 

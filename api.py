@@ -20,14 +20,16 @@ Docs:
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum
-from typing import Optional
-
-import asyncio
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 from deed_validator.models import EnrichedDeed, ValidationFinding, ValidationReport
 from deed_validator.pipeline import DeedValidationPipeline
@@ -47,7 +49,7 @@ _pipeline: DeedValidationPipeline | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Pre-warm the pipeline (load counties.json) on startup."""
     global _pipeline  # noqa: PLW0603
     _pipeline = DeedValidationPipeline()
@@ -125,24 +127,28 @@ class ValidateResponse(BaseModel):
     findings: list[FindingOut]
     deed: Optional[DeedOut] = None
 
-    model_config = {"json_schema_extra": {"example": {
-        "document_id": "DEED-TRUST-0042",
-        "is_valid": False,
-        "extraction_method": "Regex-only (no LLM API key)",
-        "original_hash": "a1b2c3d4...",
-        "error_count": 2,
-        "warning_count": 2,
-        "findings": [
-            {
-                "severity": "ERROR",
-                "code": "DATE_LOGIC_VIOLATION",
-                "field": "date_recorded",
-                "message": "Recorded before signed — 5 day gap",
-                "details": {"gap_days": 5},
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "document_id": "DEED-TRUST-0042",
+                "is_valid": False,
+                "extraction_method": "Regex-only (no LLM API key)",
+                "original_hash": "a1b2c3d4...",
+                "error_count": 2,
+                "warning_count": 2,
+                "findings": [
+                    {
+                        "severity": "ERROR",
+                        "code": "DATE_LOGIC_VIOLATION",
+                        "field": "date_recorded",
+                        "message": "Recorded before signed — 5 day gap",
+                        "details": {"gap_days": 5},
+                    }
+                ],
+                "deed": None,
             }
-        ],
-        "deed": None,
-    }}}
+        }
+    }
 
 
 class HealthResponse(BaseModel):
@@ -164,10 +170,7 @@ def _build_response(report: ValidationReport) -> ValidateResponse:
     """Convert the internal ValidationReport to the API response schema."""
     deed_out = DeedOut.model_validate(report.deed, from_attributes=True) if report.deed else None
 
-    findings_out = [
-        FindingOut.model_validate(f, from_attributes=True)
-        for f in report.findings
-    ]
+    findings_out = [FindingOut.model_validate(f, from_attributes=True) for f in report.findings]
 
     error_count = sum(1 for f in report.findings if f.severity.value == "ERROR")
     warning_count = sum(1 for f in report.findings if f.severity.value == "WARNING")
@@ -230,7 +233,7 @@ async def validate_deed_file(file: UploadFile) -> ValidateResponse:
     try:
         raw_text = content.decode("utf-8")
     except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text")
+        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text") from None
 
     if len(raw_text.strip()) < 10:
         raise HTTPException(status_code=422, detail="File content too short to be a deed")

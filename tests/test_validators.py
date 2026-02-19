@@ -24,14 +24,11 @@ from deed_validator.validators import (
     validate_amount_consistency,
     validate_apn_format,
     validate_date_logic,
-    validate_future_dates,
     validate_grantor_name,
-    validate_grantee_parties,
     validate_state_code,
     validate_status,
 )
 from deed_validator.word_to_number import words_to_number
-
 
 # ─── Test Data ───────────────────────────────────────────────────────
 
@@ -478,15 +475,15 @@ class TestFullPipeline:
         pipeline = DeedValidationPipeline()
         report = pipeline.run(RAW_OCR)
 
-        error_codes = {
-            f.code for f in report.findings if f.severity == Severity.ERROR
-        }
+        error_codes = {f.code for f in report.findings if f.severity == Severity.ERROR}
 
         # These two are the dealbreakers
-        assert "DATE_LOGIC_VIOLATION" in error_codes, \
+        assert "DATE_LOGIC_VIOLATION" in error_codes, (
             "CRITICAL: Failed to catch date recorded before date signed!"
-        assert "AMOUNT_MISMATCH" in error_codes, \
+        )
+        assert "AMOUNT_MISMATCH" in error_codes, (
             "CRITICAL: Failed to catch $50K discrepancy between numeric and written amounts!"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -539,7 +536,9 @@ class TestWordToNumberEdgeCases:
         assert result == Decimal(150_000)
 
     def test_compound_with_ones(self):
-        result = words_to_number("Two Million Four Hundred Sixty Seven Thousand Eight Hundred Ninety One")
+        result = words_to_number(
+            "Two Million Four Hundred Sixty Seven Thousand Eight Hundred Ninety One"
+        )
         assert result == Decimal(2_467_891)
 
 

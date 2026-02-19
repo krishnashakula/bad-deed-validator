@@ -79,8 +79,7 @@ def extract_with_llm(raw_text: str) -> RawDeedExtraction | None:
                 {
                     "role": "user",
                     "content": (
-                        "Extract structured data from this OCR-scanned deed:\n\n"
-                        f"{raw_text}"
+                        f"Extract structured data from this OCR-scanned deed:\n\n{raw_text}"
                     ),
                 },
             ],

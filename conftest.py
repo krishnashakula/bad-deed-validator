@@ -1,4 +1,5 @@
 """Pytest configuration — ensures the project root is importable."""
+
 import sys
 from pathlib import Path
 from unittest.mock import patch

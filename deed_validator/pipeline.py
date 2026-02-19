@@ -39,6 +39,7 @@ Design principles:
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 from datetime import date
@@ -125,9 +126,7 @@ class DeedValidationPipeline:
         validation_findings = validate_all(enriched)
 
         # ── Step 6: Compile final report ────────────────────────────
-        all_findings = (
-            reconciliation_findings + enrichment_findings + validation_findings
-        )
+        all_findings = reconciliation_findings + enrichment_findings + validation_findings
         has_errors = any(f.severity == Severity.ERROR for f in all_findings)
 
         return ValidationReport(
@@ -170,15 +169,12 @@ class DeedValidationPipeline:
             if regex_val is not None and llm_val is not None:
                 # Use type-aware comparison: Decimal and date compare by value,
                 # not by string representation (avoids 1250000 != 1250000.00)
-                if isinstance(regex_val, Decimal) and isinstance(llm_val, Decimal):
-                    values_match = regex_val == llm_val
-                elif isinstance(regex_val, date) and isinstance(llm_val, date):
+                if (isinstance(regex_val, Decimal) and isinstance(llm_val, Decimal)) or (
+                    isinstance(regex_val, date) and isinstance(llm_val, date)
+                ):
                     values_match = regex_val == llm_val
                 else:
-                    values_match = (
-                        str(regex_val).strip().lower()
-                        == str(llm_val).strip().lower()
-                    )
+                    values_match = str(regex_val).strip().lower() == str(llm_val).strip().lower()
 
                 if not values_match:
                     findings.append(
@@ -202,9 +198,7 @@ class DeedValidationPipeline:
 
     # ─── Required Field Check ────────────────────────────────────────
 
-    def _check_required_fields(
-        self, extraction: RawDeedExtraction
-    ) -> list[ValidationFinding]:
+    def _check_required_fields(self, extraction: RawDeedExtraction) -> list[ValidationFinding]:
         """Ensure all critical fields were extracted.
 
         If any required field is missing, we cannot proceed with validation.
@@ -305,17 +299,15 @@ class DeedValidationPipeline:
         grantees = parse_grantees(extraction.grantee)
         # ── Convert written amount to Decimal (before validators run) ──
         amount_from_words: Decimal | None = None
-        try:
+        with contextlib.suppress(ValueError):
             amount_from_words = words_to_number(extraction.amount_words)
-        except ValueError:
-            pass  # Validator will report AMOUNT_WORDS_UNPARSEABLE
         # ── Calculate estimated transfer tax & closing costs ───
         estimated_tax = None
         estimated_closing = None
         if tax_rate and extraction.amount_numeric:
             estimated_tax = Decimal(str(tax_rate)) * extraction.amount_numeric
             # Closing costs = transfer tax + estimated recording/escrow fees
-            # (typical 0.1%–0.2% of sale price for recording + flat fees)
+            # (typical 0.1%-0.2% of sale price for recording + flat fees)
             recording_fee = Decimal("75.00")  # Typical county recording fee
             estimated_closing = estimated_tax + recording_fee
 

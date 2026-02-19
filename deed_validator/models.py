@@ -7,13 +7,12 @@ the model, it fails loudly at the boundary — not silently downstream.
 
 from __future__ import annotations
 
-from datetime import date
-from decimal import Decimal
+from datetime import date  # noqa: TC003 — Pydantic needs these at runtime
+from decimal import Decimal  # noqa: TC003
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
-
 
 # ─── Severity Levels ────────────────────────────────────────────────
 
@@ -36,7 +35,7 @@ class ValidationFinding(BaseModel):
     code: str  # Machine-readable, e.g. "DATE_LOGIC_VIOLATION"
     field: str  # Which deed field this relates to
     message: str  # Human-readable explanation
-    details: dict = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 # ─── Extraction Models ──────────────────────────────────────────────

@@ -83,6 +83,7 @@ plugins = ["pydantic.mypy"]
 module = [
     "openai",
     "openai.*",
+    "dotenv",
 ]
 ignore_missing_imports = true
 

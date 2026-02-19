@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+from typing import Any
 
 from deed_validator.models import Severity
 from deed_validator.pipeline import DeedValidationPipeline
@@ -57,7 +58,7 @@ _WIDTH = 72
 # ─── Pretty Printer Helpers ─────────────────────────────────────────
 
 
-def _print_deed_details(deed) -> None:
+def _print_deed_details(deed: Any) -> None:
     """Print enriched deed fields."""
     print(f"  County:      {deed.county_raw} {_DIM}→{_RESET} {_BOLD}{deed.county_resolved}{_RESET}")
     print(f"  State:       {deed.state}")
@@ -79,7 +80,7 @@ def _print_deed_details(deed) -> None:
         print(f"  Close Cost:  ${deed.estimated_closing_costs:,.2f}")
 
 
-def _print_findings_group(findings, color: str, label: str) -> None:
+def _print_findings_group(findings: list[Any], color: str, label: str) -> None:
     """Print a categorized group of findings (errors or warnings)."""
     if not findings:
         return
@@ -92,7 +93,7 @@ def _print_findings_group(findings, color: str, label: str) -> None:
         print()
 
 
-def _print_info_group(findings) -> None:
+def _print_info_group(findings: list[Any]) -> None:
     """Print informational findings (compact format)."""
     if not findings:
         return
@@ -105,7 +106,7 @@ def _print_info_group(findings) -> None:
 # ─── Pretty Printer ─────────────────────────────────────────────────
 
 
-def print_report(report) -> int:
+def print_report(report: Any) -> int:
     """Pretty-print the validation report with ANSI color codes.
 
     Returns:
@@ -145,7 +146,7 @@ def print_report(report) -> int:
 # ─── Main ────────────────────────────────────────────────────────────
 
 
-def main():
+def main() -> None:
     """Run the full validation pipeline and print the report."""
     print("\n  Starting Bad Deed Validator...")
     print("  Analyzing OCR-scanned deed...\n")

@@ -21,6 +21,7 @@ import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
+from typing import Any
 
 # ─── Abbreviation Expansion Table ────────────────────────────────────
 # Maps common US geographic abbreviations to all possible expansions.
@@ -52,29 +53,27 @@ class CountyMatch:
     original: str  # What the OCR said
     resolved: str  # What we matched it to
     tax_rate: float  # From our reference data
-    confidence: float  # 0.0–1.0 match score
+    confidence: float  # 0.0-1.0 match score
 
 
 # ─── Public API ──────────────────────────────────────────────────────
 
 
-def load_counties(path: str | Path | None = None) -> list[dict]:
+def load_counties(path: str | Path | None = None) -> list[dict[str, Any]]:
     """Load county reference data from JSON file.
 
     Args:
         path: Path to counties.json. Defaults to project root.
     """
-    if path is None:
-        path = Path(__file__).parent.parent / "counties.json"
-    else:
-        path = Path(path)
+    resolved = Path(__file__).parent.parent / "counties.json" if path is None else Path(path)
 
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with resolved.open(encoding="utf-8") as f:
+        result: list[dict[str, Any]] = json.load(f)
+        return result
 
 
 def resolve_county(
-    raw_name: str, counties: list[dict] | None = None
+    raw_name: str, counties: list[dict[str, Any]] | None = None
 ) -> CountyMatch | None:
     """Resolve an abbreviated/messy county name to a canonical one.
 
@@ -102,7 +101,7 @@ def resolve_county(
     candidates = _expand_abbreviations(raw_name)
 
     # ── Step 3: Fuzzy-match each candidate against all counties ─────
-    best_match: dict | None = None
+    best_match: dict[str, Any] | None = None
     best_score: float = 0.0
 
     for candidate in candidates:

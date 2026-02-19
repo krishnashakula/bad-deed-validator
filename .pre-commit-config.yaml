@@ -48,39 +48,33 @@ repos:
         args: [--pytest-test-first]
 
   # ── 2. Ruff — linter + formatter (replaces flake8, isort, black) ──
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.7
     hooks:
-      - id: ruff-lint
-        name: ruff (lint)
-        entry: ruff check --fix --exit-non-zero-on-fix
-        language: system
-        types: [python]
-
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-        name: ruff (format)
-        entry: ruff format --check
-        language: system
-        types: [python]
 
   # ── 3. Type checking — mypy (strict mode) ─────────────────────────
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
     hooks:
       - id: mypy
-        name: mypy (strict)
-        entry: mypy --config-file=pyproject.toml
-        language: system
-        types: [python]
+        additional_dependencies:
+          - pydantic>=2.0
+          - fastapi>=0.115
+          - types-requests
+        args: [--config-file=pyproject.toml, deed_validator/, api.py, main.py]
         pass_filenames: false
 
   # ── 4. Security audit — Bandit ─────────────────────────────────────
-  - repo: local
+  - repo: https://github.com/PyCQA/bandit
+    rev: "1.8.3"
     hooks:
       - id: bandit
-        name: bandit (security)
-        entry: bandit -c pyproject.toml -r deed_validator/ api.py main.py
-        language: system
+        args: [-c, pyproject.toml, -r, deed_validator/, api.py, main.py]
+        additional_dependencies: ["bandit[toml]"]
         pass_filenames: false
-        types: [python]
 
   # ── 5. Tests gate — nothing ships if tests fail ────────────────────
   - repo: local

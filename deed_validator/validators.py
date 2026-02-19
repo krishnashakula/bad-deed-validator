@@ -14,27 +14,82 @@ The validate_all() function runs every check and aggregates findings.
 
 from __future__ import annotations
 
+import datetime
 import re
-from datetime import date
-from decimal import Decimal
 
 from .models import EnrichedDeed, Severity, ValidationFinding
 
-
 # ─── Constants ───────────────────────────────────────────────────────
 
-VALID_RECORDING_STATUSES: frozenset[str] = frozenset({
-    "RECORDED", "FINAL", "APPROVED", "EXECUTED",
-})
+VALID_RECORDING_STATUSES: frozenset[str] = frozenset(
+    {
+        "RECORDED",
+        "FINAL",
+        "APPROVED",
+        "EXECUTED",
+    }
+)
 
-VALID_US_STATES: frozenset[str] = frozenset({
-    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
-    "DC", "PR", "GU", "VI", "AS", "MP",
-})
+VALID_US_STATES: frozenset[str] = frozenset(
+    {
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
+        "DC",
+        "PR",
+        "GU",
+        "VI",
+        "AS",
+        "MP",
+    }
+)
 
 
 # ─── Orchestrator ────────────────────────────────────────────────────
@@ -125,7 +180,7 @@ def validate_amount_consistency(deed: EnrichedDeed) -> list[ValidationFinding]:
                 field="amount_numeric",
                 message=(
                     f"DISCREPANCY: Numeric amount (${deed.amount_numeric:,.2f}) does "
-                    f"not match written amount \"{deed.amount_words}\" "
+                    f'not match written amount "{deed.amount_words}" '
                     f"(=${amount_from_words:,.2f}). "
                     f"Difference: ${discrepancy:,.2f}. "
                     f"Both values must agree before recording."
@@ -192,7 +247,7 @@ def validate_status(deed: EnrichedDeed) -> list[ValidationFinding]:
                 ),
                 details={
                     "current_status": deed.status,
-                    "valid_statuses": sorted(VALID_RECORDING_STATUSES),  # noqa: C414
+                    "valid_statuses": sorted(VALID_RECORDING_STATUSES),
                 },
             )
         )
@@ -247,7 +302,7 @@ def validate_state_code(deed: EnrichedDeed) -> list[ValidationFinding]:
 def validate_future_dates(deed: EnrichedDeed) -> list[ValidationFinding]:
     """Flag any dates that are in the future — potential data entry error."""
     findings: list[ValidationFinding] = []
-    today = date.today()
+    today = datetime.datetime.now(tz=datetime.UTC).date()
 
     if deed.date_signed > today:
         findings.append(
