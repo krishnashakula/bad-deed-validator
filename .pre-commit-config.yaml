@@ -1,0 +1,103 @@
+# ============================================================================
+# Pre-commit Configuration — Bad Deed Validator
+# ============================================================================
+# Enforces code quality, security, and consistency on every commit.
+#
+# Setup:
+#   pip install pre-commit ruff mypy bandit
+#   pre-commit install                  # Installs the git hook
+#   pre-commit install --hook-type commit-msg   # (optional) conventional commits
+#   pre-commit run --all-files          # One-time full scan
+#
+# CI:
+#   pre-commit run --all-files --show-diff-on-failure
+# ============================================================================
+
+default_language_version:
+  python: python3
+
+fail_fast: false
+
+repos:
+  # ── 1. General file hygiene ────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Whitespace / encoding
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+      # Dangerous patterns
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+      # Data integrity
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+
+      # Python-specific
+      - id: check-ast
+      - id: debug-statements
+      - id: name-tests-test
+        args: [--pytest-test-first]
+
+  # ── 2. Ruff — linter + formatter (replaces flake8, isort, black) ──
+  - repo: local
+    hooks:
+      - id: ruff-lint
+        name: ruff (lint)
+        entry: ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff (format)
+        entry: ruff format --check
+        language: system
+        types: [python]
+
+  # ── 3. Type checking — mypy (strict mode) ─────────────────────────
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict)
+        entry: mypy --config-file=pyproject.toml
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  # ── 4. Security audit — Bandit ─────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit (security)
+        entry: bandit -c pyproject.toml -r deed_validator/ api.py main.py
+        language: system
+        pass_filenames: false
+        types: [python]
+
+  # ── 5. Tests gate — nothing ships if tests fail ────────────────────
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest
+        entry: python -m pytest tests/ -q --tb=short --no-header
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+  # ── 6. Commit message lint (Conventional Commits) ──────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert]

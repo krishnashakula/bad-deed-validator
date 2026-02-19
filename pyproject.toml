@@ -1,0 +1,143 @@
+# ============================================================================
+# pyproject.toml — Unified tool configuration for Bad Deed Validator
+# ============================================================================
+# All linting, formatting, type-checking, and testing config lives here.
+# No more scattered .flake8 / .isort.cfg / mypy.ini / setup.cfg files.
+# ============================================================================
+
+[project]
+name = "bad-deed-validator"
+version = "1.0.0"
+description = "Paranoid validation for OCR-scanned property deeds"
+requires-python = ">=3.11"
+
+# ── Ruff (linter + formatter — replaces flake8, isort, black) ────────
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["deed_validator", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes (unused imports, undefined names)
+    "I",      # isort (import ordering)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modernize syntax)
+    "S",      # bandit-equivalent security checks (flake8-bandit)
+    "B",      # bugbear (common gotchas)
+    "A",      # flake8-builtins (shadowing builtins)
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T20",    # flake8-print (no print() in library code)
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking (move imports behind TYPE_CHECKING)
+    "RUF",    # ruff-specific rules
+    "PTH",    # flake8-use-pathlib
+    "PL",     # pylint subset
+]
+ignore = [
+    "S101",   # assert is fine in tests and type-narrowing
+    "T201",   # print() is used intentionally in main.py CLI output
+    "PLR2004",# magic values — we use literal numbers in validators
+    "PLR0913",# too many function args — Pydantic models need them
+    "E501",   # line length handled by formatter
+    "UP007",  # X | Y union syntax — already used, but Optional is fine too
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",   # assert is the whole point of tests
+    "PLR2004",# magic values in test assertions are expected
+    "T201",   # print in tests for debugging is fine
+]
+"main.py" = [
+    "T201",   # CLI output uses print()
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["deed_validator"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ── Mypy (static type checker) ───────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+# Pydantic plugin for model-aware checking
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "openai",
+    "openai.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false          # Test functions don't always need annotations
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# ── Bandit (security scanner) ────────────────────────────────────────
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "__pycache__"]
+skips = [
+    "B101",   # assert — used for type narrowing in pipeline
+]
+
+# ── Pytest ───────────────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-q",
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+    "--no-header",
+]
+filterwarnings = [
+    "error",                             # Treat warnings as errors
+    "ignore::DeprecationWarning",        # Except deprecation (third-party churn)
+]
+
+# ── Coverage (optional — add pytest-cov to requirements-dev.txt) ─────
+
+[tool.coverage.run]
+source = ["deed_validator"]
+branch = true
+omit = [
+    "tests/*",
+    "deed_validator/__pycache__/*",
+]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
